@@ -96,4 +96,4 @@ To compile this sketch in the Arduino IDE (Board = Teensy 4.1), you will need th
 
 ## Recording quality
 * **Noise floor** is typically below -120dB re: full scale when input leads are shorted:
-<img width="502" height="209" alt="NoiseFloor dB re FullScale" src="https://github.com/user-attachments/assets/042ddf66-632f-4f5a-93bb-d991a18450d9" />
+<img width="1000" height="400" alt="NoiseFloor dB re FullScale" src="https://github.com/user-attachments/assets/042ddf66-632f-4f5a-93bb-d991a18450d9" />
