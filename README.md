@@ -92,5 +92,9 @@ To compile this sketch in the Arduino IDE (Board = Teensy 4.1), you will need th
 
 * **SdFat** (For ExFAT and high-speed SDIO support)
 
+## Recording quality
+* **Noise floor** is typically below -110dB re: full scale when input leads are shorted
+![Noise Floor](image_source) 
+
 * **Time** (TimeLib for RTC management)
 
