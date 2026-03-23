@@ -56,7 +56,7 @@ S                       # Mode: S (Stereo), L (Mono-Left), R (Mono-Right)
 0000 2400               # Start/End times
 ```
 
-## ⚙️ Line-by-Line Breakdown of Setup File:
+## 📝 Line-by-Line Breakdown of Setup File:
 
 **Duty Cycle:** Sets the recording duration and sleep duration.
 
@@ -70,7 +70,7 @@ S                       # Mode: S (Stereo), L (Mono-Left), R (Mono-Right)
 
 **Daily Schedule:** Restricts recording to a specific daily time window using military time (e.g., 2000 0600 records overnight). Use 0000 2400 to run 24/7.
 
-## ⚙️ LED Status Indicators
+## 💡️ LED Status Indicators
 
 * **Solid On (Boot):** Initializing SD card and reading configuration.
 
@@ -84,7 +84,7 @@ S                       # Mode: S (Stereo), L (Mono-Left), R (Mono-Right)
 
 * **2 Slow Flashes loop:** Low Battery Cutoff triggered. Battery must be recharged.
 
-## ⚙️ Dependencies
+## 📦️ Dependencies
 
 To compile this sketch in the Arduino IDE (Board = Teensy 4.1), you will need the following libraries:
 
@@ -94,6 +94,6 @@ To compile this sketch in the Arduino IDE (Board = Teensy 4.1), you will need th
 
 * **Time** (TimeLib for RTC management)
 
-## Recording quality
+## 📊 Recording quality
 * **Noise floor** from 100Hz to 96kHz is typically below -120dB re: full scale when input leads are shorted:
 <img width="1000" height="400" alt="NoiseFloor dB re FullScale" src="https://github.com/user-attachments/assets/042ddf66-632f-4f5a-93bb-d991a18450d9" />
