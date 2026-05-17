@@ -4,6 +4,7 @@ TUFR is an low-power, high-fidelity, stereo acoustic field recorder designed for
 
 Powered by the Teensy 4.1 microcontroller, TUFR receives signals from an external I2S ADC module and records 192kHz, 16-bit audio directly to an ExFAT/FAT32 MicroSD card. By dropping the CPU clock to 24MHz and utilizing a hardware power switch for the ADC and microphone, TUFR achieves long battery life for long-term remote deployments.
 
+For code and additonal resources, see:  https://github.com/JayB545/Teensy-Ultrasonic-Stereo-Recorder
 <meta name="google-site-verification" content="D1fbSpkd03MACYJfi2NqwJBdTuFnmn3Ql1i0AwXuF08" />
 
 ## 🌟 Key Features
