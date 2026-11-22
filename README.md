@@ -17,9 +17,10 @@ Low-power field recorder for ultrasonic sound (bats, cetaceans). A Teensy 4.1 re
 
 ## Hardware notes
 
-- Board: BarlowAGAD TUFR Bridgeboard v3 (the v5 motherboard is in design). Pin assignments are in `TUFR_Config.h` and `TUFR_pin_table.html`: ADC_EN 9, SHDNZ 6, I2C SDA 18 / SCL 19, BCLK 21, LRCLK 20, data 8, shutdown button 2, LED 13, Vin divider 22 (A8).
+- MotherBoard: BarlowAGAD TUFR Bridgeboard v3a (the v4 motherboard is in design). Pin assignments are in `TUFR_Config.h` and `TUFR_pin_table.html`: ADC_EN 9, SHDNZ 6, I2C SDA 18 / SCL 19, BCLK 21, LRCLK 20, data 8, shutdown button 2, LED 13, Vin divider 22 (A8). In the current version, components are hand-soldered onto the bare motherboard.
+- ADC Module: In the current version, the ADC module is manufactured fully populated (except for the pin headers).
 - **IOVD**: the ADC module's IOVD pad must be connected to the Teensy 3.3 V (without it: cold-start dropouts at 384 kHz and HF spikes).
-- **USB power**: cut the Teensy's VUSB-VIN pad and fit a wire link instead of a diode at the buck output. USB then carries data only; bench work with the serial monitor needs battery or bench-supply power. `Vin` in the log is then the buck output (about 4.1 V); below about 3.8 V the batteries are running out.
+- **USB power**: cut the Teensy's VUSB-VIN pad. USB then carries data only; bench work with the serial monitor needs battery or bench-supply power. `Vin` in the log is then the buck output (about 4.1 V); below about 3.8 V the batteries are running out.
 - Input pins must stay within the ADC's supply rails (0 to 3.3 V). Consider a series resistor and clamp diodes per input if a pre-amp runs from a higher supply.
 
 ## Compile-time settings
