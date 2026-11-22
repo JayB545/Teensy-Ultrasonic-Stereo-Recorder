@@ -1,0 +1,10 @@
+2                       # Channels: 1, 2 or 4 (sequential from input 1; e.g. 2 = inputs 1+2). 3 is recorded as 4 (keeps the channel order fixed across files).
+192                     # Sample rate in kHz: 48, 96 or 192 (any channel count); 384 (1-2 channels only); 768 (1 channel only); -768 = sample at 768 kHz but write 384 kHz files (1 channel; half the file size, filtered so nothing above 192 kHz folds in)
+1 0                     # Record Minutes, Wait Minutes (wait 0 = continuous; waits of 30 s or more use low-power hibernate and restart the board each cycle)
+WAV                     # File format: WAV or FLAC. FLAC is lossless (same audio, typically 25-35 % of the WAV size for quiet ocean or room noise, up to about 90 % for loud signals) and uses more CPU; 60 MHz is enough for every rate and channel count except -768, where FLAC raises the clock to 100 MHz automatically. If this line is left out, files are WAV.
+20                      # Analog gain, 0-42 (ADC register units; higher = more gain)
+-1                      # High-pass filter. -1, -2, -3 = the ADC's fixed first-order presets at 0.00025, 0.002, 0.008 x sample rate (at 384 kHz: 96, 768, 3072 Hz; -1 is the default); 0 = off (DC passes); a positive number = cutoff in Hz using the programmable filter (e.g. 20 for blue whales)
+0000 2400               # Daily recording window, start stop (HHMM, RTC time). 0000 2400 = always on. Start later than stop crosses midnight, e.g. 2000 0600 = 8pm to 6am. Outside the window the board hibernates.
+60                      # Clock speed (MHz) while recording. 60 is the low-power default and enough for FLAC (bench-tested with loud white noise at 384 kHz x 2 ch); -768 with FLAC is raised to 100 automatically. Raise it if the log shows mid-file misses or SD write errors.
+2026 11 03 12 00 00     # RTC Sync (YYYY MM DD HH MM SS) - applied only if later than the clock's current time; update to the real date/time before each session
+0 0 0 0 0 0             # Scheduled Start (YYYY MM DD HH MM SS) - delays the first recording; zeros or a time in the past = start immediately
