@@ -1,102 +1,102 @@
-# TUFR: Teensy Ultrasonic Field Recorder
+# TUFR 4.2 - Teensy Ultrasonic Field Recorder
 
-TUFR is an low-power, high-fidelity, stereo acoustic field recorder designed for continuous or scheduled ultrasonic monitoring (such as bat echolocation or bird vocalizations). 
+Firmware 4.2, build 2026-11-14b.
 
-Powered by the Teensy 4.1 microcontroller, TUFR receives signals from an external I2S ADC module and records 192kHz, 16-bit audio directly to an ExFAT/FAT32 MicroSD card. By dropping the CPU clock to 24MHz and utilizing a hardware power switch for the ADC and microphone, TUFR achieves long battery life for long-term remote deployments.
+Low-power field recorder for ultrasonic sound (bats, cetaceans). A Teensy 4.1 records 16-bit WAV or lossless FLAC files to a microSD card from a WMXZ-EU ADC_V2 module (TLV320ADC6140): 1, 2 or 4 channels at 48/96/192 kHz, 1-2 channels at 384 kHz, 1 channel at 768 kHz or `-768` (768 kHz sampled, 384 kHz files). Every deployment setting is read from `TUFR_Setup.txt` on the SD card; nothing needs recompiling.
 
-For code and additonal resources, see:  https://github.com/JayB545/Teensy-Ultrasonic-Stereo-Recorder
-<meta name="google-site-verification" content="D1fbSpkd03MACYJfi2NqwJBdTuFnmn3Ql1i0AwXuF08" />
+**Users: see the TUFR 4.2 User Manual** for the setup file, filter responses, gain, file formats, scheduling, LED codes and the log. This README is for whoever builds or modifies the firmware.
 
-## 🌟 Key Features
+## Building
 
-* **High-Fidelity Ultrasonic Capture:** Gapless 1-minute stereo WAV files recorded at 192kHz (via 3-wire I2S module in Master Mode).
-* **"Purity Mode" Audio:** Raw, un-equalized PCM data is streamed straight to the SD card for maximum fidelity and zero CPU overhead.
-* **Ultra-Low Power:** Draws ~100mA while actively recording and drops to ~32mA during sleep states. A single 3400mAh 18650 lithium cell yields ~12 hours of continuous recording, scaling linearly with larger packs.
-* **Smart Duty Cycle & Daily Scheduling:** Record continuously, set a duty cycle (e.g., 1 min on / 5 mins off), or restrict recording to specific daily windows (e.g., 20:00 to 06:00) with automatic midnight-crossing logic.
-* **Robust File Management:** Supports high-capacity ExFAT SD cards via 4-bit SDIO. Includes correct Windows/Mac "Date Modified" file timestamps.
-* **Field-Ready Telemetry:** Logs SD write errors, boot reasons, and smoothed battery voltage to a persistent `TUFR_log.txt` file.
-* **Battery Protection:** Safely finalizes files and enters a permanent deep-halt if the lithium cell drops below 3.0V.
+- Arduino IDE with Teensyduino, board **Teensy 4.1**, Tools > Optimize **"Faster"**.
+- Libraries: **SdFat** (the Teensyduino copy), **Time** (TimeLib), **Wire**. No Snooze library.
+- The sketch folder must be named `TUFR_4.2` (Arduino requires the folder to match `TUFR_4.2.ino`).
+- RAM: the FLAC encoder reserves about 92 KB of RAM1 even in WAV mode. If the compile reports RAM1 short, build `tufr_flac.c` with `-DTUFR_FLAC_MAX_BLOCK=1024` (files about 0.3 % larger).
+- Uploading with the Teensy Loader sets the RTC to the computer's clock.
+- Before a field release check that `TUFR_WDT_TEST` is `0`.
 
-## 🛠️ Hardware Requirements
+## Hardware notes
 
-* **Microcontroller:** Teensy 4.1 (with attached CR coin cell for RTC backup).
-* **ADC Module:** WM8782 (or equivalent) 24-bit/192kHz ADC as I2S master (runs on 3.3V using Vcc pin labeled for 5V). Jumper 24.576MHz pin to MCLK pin.
-* **Power Supply:** 5V (e.g. output from an 18650 battery pack (via Boost Converter) or an 18650 UPS Hat). Power must be supplied to the `VIN` pin.
-* **Power Switch:** Pololu 2810 High-Side P-Channel MOSFET Switch (to kill 3.3V ADC & microphone power during sleep).
-* **Storage:** High-speed MicroSD Card (ExFAT or FAT32, tested up to 512GB, should be OK at 2TB).
+- Board: BarlowAGAD TUFR Bridgeboard v3 (the v5 motherboard is in design). Pin assignments are in `TUFR_Config.h` and `TUFR_pin_table.html`: ADC_EN 9, SHDNZ 6, I2C SDA 18 / SCL 19, BCLK 21, LRCLK 20, data 8, shutdown button 2, LED 13, Vin divider 22 (A8).
+- **IOVD**: the ADC module's IOVD pad must be connected to the Teensy 3.3 V (without it: cold-start dropouts at 384 kHz and HF spikes).
+- **USB power**: cut the Teensy's VUSB-VIN pad and fit a wire link instead of a diode at the buck output. USB then carries data only; bench work with the serial monitor needs battery or bench-supply power. `Vin` in the log is then the buck output (about 4.1 V); below about 3.8 V the batteries are running out.
+- Input pins must stay within the ADC's supply rails (0 to 3.3 V). Consider a series resistor and clamp diodes per input if a pre-amp runs from a higher supply.
 
-## 🔌 Wiring Guide
+## Compile-time settings
 
-| Teensy 4.1 Pin | Peripheral / Component | Notes |
-| :--- | :--- | :--- |
-| **VIN (5V)** | 18650 5V Boost Output | Primary system power. |
-| **3.3V** | Pololu-switched power supply | ADC & microphone pre-amp power. |
-| **GND** | Common Ground | Tie all components to a common ground. |
-| **VBAT** | 3V CR Coin Cell | Keeps the RTC running when main power is off. |
-| **Pin 9** | Pololu Switch "ON" Pin | High=ADC On, Low=ADC Off (Sleep). |
-| **Pin 2** | Shutdown Button | Connect to GND via momentary pushbutton. |
-| **Pin 22 (A8)** | Battery Voltage Divider | Connect to the center of a 1:1 voltage divider (e.g., two 10kΩ resistors) measuring the *raw* battery voltage (B+). |
-| **Pin 7** | I2S TX | Audio Data Out (Anti-ghosting pull-down). |
-| **Pin 8** | I2S RX | Audio Data In (From ADC `DATA` or `DOUT`). |
-| **Pin 20** | I2S LRCLK | Word Select / Left-Right Clock. |
-| **Pin 21** | I2S BCLK | Bit Clock. |
-| **Pin 13** | Onboard LED | Status indicator. |
+| Setting | Where | Default | What it does |
+| --- | --- | --- | --- |
+| `TUFR_WATCHDOG` | `TUFR_4.2.ino` | 1 | Hardware watchdog (RTWDOG) on |
+| `WDT_TIMEOUT_S` | `TUFR_4.2.ino` | 10 | Watchdog timeout, seconds (bench-confirmed) |
+| `TUFR_WDT_TEST` | `TUFR_4.2.ino` | 0 | Bench test: 1 = stop feeding the watchdog 30 s into the first file (runs once; delete `TUFR_WDT_DONE.TXT` to repeat). **0 for the field.** |
+| `DEAD_STREAM_RECOVER_MS` | `TUFR_4.2.ino` | 500 | All-zero audio this long = dead stream |
+| `DEAD_STREAM_INPLACE_TRIES` | `TUFR_4.2.ino` | 3 | In-place ADC restarts per file before a full power cycle |
+| `POWER_CYCLE_SHORT_S`, `_LONG_S`, `_SHORT_TRIES` | `TUFR_4.2.ino` | 60, 600, 3 | Power-off time for recovery: 60 s, then 10 min after three in a row |
+| `SD_WRITE_FAIL_RUN` | `TUFR_4.2.ino` | 8 | Consecutive failed SD writes that count as a failing card |
+| `TUFR_PREALLOCATE` | `TUFR_4.2.ino` | 0 | Preallocate the next file (off: preallocation caused mid-file misses) |
+| `TUFR_USB_OFF` | `TUFR_4.2.ino` | 2 | Power down USB PHY and PLL while recording if no serial monitor is open (saves about 13 mA) |
+| `gFiltSel` | `TUFR_4.2.ino` | -1 | ADC decimation filter: -1 auto (linear phase at 384 kHz, ultra-low latency elsewhere), 0 linear, 1 low latency, 2 ultra-low latency. Not in the setup file. |
+| `TUFR_HPF_D1_SIGN` | `TUFR_Config.h` | 1 | Sign convention of the programmable high-pass (1 is correct) |
+| `TUFR_VIN_DIVIDER` | `TUFR_Config.h` | 2.0 | (Rtop + Rbottom) / Rbottom of the Vin divider on pin 22 |
+| `TUFR_FLAC_MAX_BLOCK` | `tufr_flac.h` | 2048 | FLAC frame length per channel |
+| `MAX_QUEUE` | `global.h` | 14 | Audio queue, 32 KB slots (about 300 ms at 384 kHz x 2 ch) |
 
-*Note: The voltage divider must tap the raw Lithium-Ion voltage (max 4.2V), **not** the 5V regulated output, to accurately trigger the 3.0V low-battery cutoff.*
+## How it works
 
-## ⚙️ Configuration (`TUFR_Setup.txt`)
+- **Capture**: Walter Zimmer's SAI/DMA driver fills a 14-slot queue of 16-bit samples (32 KB per slot); `loop()` writes slots to the card, or encodes them to FLAC first. In `-768` mode a 43-tap half-band FIR in the DMA interrupt halves the rate.
+- **Gap-free files**: in continuous mode the next file is opened about 6 s before the join, so only the old file's close (about 25 ms) falls at the join; each file starts at the previous file's scheduled end, so files are exactly the set length. The FLAC encoder carries its state across files.
+- **FLAC** (`tufr_flac.c/.h`, written for TUFR, no libFLAC, no malloc): fixed predictors of order 0-4 chosen per channel per frame, partitioned Rice coding (up to 64 partitions), 2048-sample frames, constant/verbatim subframes, a 512-byte header so every 32 KB SD write stays sector-aligned, header rewritten at close. About 33 cycles per sample on quiet input, 40-48 on loud input.
+- **Waits** (duty cycle, daily window, scheduled start) use Walter Zimmer's SNVS hibernate: the 3.3 V regulator is switched off (0.75 mA) and the RTC alarm restarts the board; a marker file `TUFR_HIB.TXT` tells the restart it is a wake.
+- **Unattended recovery**: nothing but the shutdown button stops the recorder for good.
+  1. Dead stream (0.5 s of zeros): up to 3 in-place ADC restarts per file, pauses 0.3, 2 and 10 s.
+  2. Full power cycle (hibernate 60 s, then 10 min after three in a row; count reset after a file with 10 s of live audio) when that fails, when the ADC does not answer (5 blinks), or on any SD problem (2 blinks: missing, full, failing writes, file not created). Hibernation also removes IOVD power, which an in-place ADC restart cannot.
+  3. Watchdog: a hang of 10 s restarts the chip, which powers off at once (before touching the SD card) for 60-123 s. The wake time is chosen so that the alarm second modulo 64 is 37; the next boot recognises that and logs `WATCHDOG_RESET`. (The SNVS general-purpose registers did not keep a value through the power-off on this board, so they are not used.)
+- **SD space**: free space is measured once per boot (`SD_SPACE`) and counted down as files close; a file is started only if a full-size WAV file would fit.
+- **Setup file**: ten lines in a fixed order; the file-format line is a word (`WAV`/`FLAC`); if line 4 is a number the format line is treated as missing (WAV). 3 channels are recorded as 4 (16384-sample blocks are not a whole number of 3-channel frames). `-768` with FLAC raises the clock to 100 MHz.
 
-TUFR is configured entirely via a plain text file on the root of the SD card named `TUFR_Setup.txt`. This allows researchers to change deployment parameters in the field without recompiling code.
+## Files
 
-You can copy and paste the following template directly into your `TUFR_Setup.txt` file. The recorder will parse the values and ignore the `#` comments. The file **must** contain exactly 6 lines.
+| File | Role |
+| --- | --- |
+| `TUFR_4.2.ino` | Main sketch: setup file, file handling, FLAC staging, waits, hibernate, recovery, watchdog |
+| `tufr_flac.c/.h` | Lossless FLAC encoder |
+| `Teensy.cpp/.h`, `adc.cpp/.h`, `process.h`, `queueProcess.cpp`, `global.h` | Walter Zimmer's capture driver (modifications noted in the sketch header) |
+| `adcRuntime.cpp/.h` | ADC configuration, channel count, high-pass, retries, health checks |
+| `rtc.h`, `rtcImpl.cpp` | Time functions for the capture driver (never define `rtc_get`/`rtc_set` here; they belong to the Teensy core) |
+| `TUFR_Config.h` | Pins, Vin divider, high-pass sign |
+| `TUFR_Setup.txt` | Template setup file for the SD card |
+| `TUFR_pin_table.html` | Printable pin table |
 
-```text
-1 0                     # Record Minutes, Wait Minutes (e.g., 1 0 is continuous)
-24                      # Clock Speed (24 is lowest power, 600 is max)
-S                       # Mode: S (Stereo), L (Mono-Left), R (Mono-Right)
-2026 03 12 17 40 00     # Optional: Force Time Sync (YYYY MM DD HH MM SS) (if later than current clock time)
-2026 03 10 06 00 00     # Optional: Scheduled Start Date/Time (will start immediately if zero or in the past)
-0000 2400               # Start/End times
-```
+The PC test harness for the encoder (`TUFR_flac_pc_test`) ships beside this folder.
 
-## 📝 Line-by-Line Breakdown of Setup File:
+## Status (2026-11-14)
 
-**Duty Cycle:** Sets the recording duration and sleep duration.
+Bench-validated on Bridgeboard v3:
 
-**Clock Speed:** Sets the Teensy's CPU frequency in MHz during recording. 24 is recommended for optimal power savings (higher if you get write errors).
+- WAV and FLAC at 384 kHz x 1 and 2 ch, 192 kHz x 4 ch, `-768`; continuous files joined without gaps; 60 MHz with no mid-file misses, including loud white noise on all channels (worst case 62 % CPU).
+- High-pass presets and programmable corners; frequency response at 96, 192, 384 kHz and `-768` (see the manual).
+- Setup file 13b format, 3 to 4 channels, `CLOCK_RAISED`.
+- Recovery: watchdog restart, power-off and `WATCHDOG_RESET` logging; missing SD card (2 blinks, recording resumes when a card is inserted).
+- Hibernate between recordings at 0.75 mA; recording 87 mA at 384 kHz x 2 ch WAV.
 
-**Audio Mode:** Determines how the I2S channels are written to the WAV file.
+### Bench tests still to do
 
-**RTC Sync:** Updates the Teensy's internal Real-Time Clock if the provided timestamp is newer than the currently saved time. Disconnect RTC battery to reset to earlier time.
+1. Full card: a nearly full card should end with complete files, `CARD_FULL` and 2 blinks.
+2. A WAV file cut off by a reset should open in Audacity and PAMGuard (placeholder header "length unknown").
+3. Recording current, FLAC vs WAV at 60 MHz and at other rates and channel counts (the manual's battery figures cover only 384 kHz x 2 ch WAV).
+4. One recording on the towed array with the 40 dB pre-amp and about 10 dB ADC gain: headroom and FLAC ratio.
+5. Recording at 48 kHz (anti-alias response not measured).
 
-**Scheduled Start:** Forces the recorder into an ultra-low-power sleep state until the specific date and time are reached. Immediate start if scheduled start is earlier than current time.
+### Known open issues
 
-**Daily Schedule:** Restricts recording to a specific daily time window using military time (e.g., 2000 0600 records overnight). Use 0000 2400 to run 24/7.
+- An input overload (1.5 Vrms) once stopped the ADC's output entirely (seen twice on 2026-11-13, not reproduced since); recovery now covers it.
+- Small spikes at 468 Hz and multiples (source unknown), a 32.77 kHz spur (RTC crystal), 60 Hz pickup.
+- The first file of a 768 kHz run can lose up to about 1 s to an SD stall at start-up (before the file opens).
 
-## 💡️ LED Status Indicators
+## Version history
 
-* **Solid On (Boot):** Initializing SD card and reading configuration.
+- **4.2 (2026-11-12 to 11-14)**: optional FLAC; encoder 3x faster (13a); setup file reordered with the format as a word, decimation-filter line removed (13b); 3 channels recorded as 4, `-768` + FLAC at 100 MHz (13c); unattended recovery and watchdog (13d); SD-card checks (14a); watchdog wake recognised by its alarm time (14b).
+- **4.1 (2026-11-03 to 11-09)**: Walter Zimmer's capture driver; ADC protection; SNVS hibernate; daily window and scheduled start; gap-free continuous files; programmable high-pass; `-768` decimation; Vin logging; USB power-down while recording.
+- **4.0**: first version with its own SAI capture (garbled at 384 kHz x 2 ch).
 
-* **Brief Flash (Every 3s):** Actively recording audio.
-
-* **Faint Flash (Every 10s):** System is sleeping (Duty Cycle Wait or Daily Schedule Wait).
-
-* **Continuous Fast Strobe:** Critical Error (SD card failed to mount, or SD card is full).
-
-* **1 Slow Flash loop:** User-triggered Safe Shutdown (via Pin 2). It is now safe to remove the SD card.
-
-* **2 Slow Flashes loop:** Low Battery Cutoff triggered. Battery must be recharged.
-
-## 📦️ Dependencies
-
-To compile this sketch in the Arduino IDE (Board = Teensy 4.1), you will need the following libraries:
-
-* **Audio** (Native Teensy Library)
-
-* **SdFat** (For ExFAT and high-speed SDIO support)
-
-* **Time** (TimeLib for RTC management)
-
-## 📊 Recording quality
-* **Noise floor** from 100Hz to 96kHz is typically below -120dB re: full scale when input leads are shorted:
-<img width="1000" height="400" alt="NoiseFloor dB re FullScale" src="https://github.com/user-attachments/assets/042ddf66-632f-4f5a-93bb-d991a18450d9" />
+Credits: capture driver and hibernate method (c) Walter Zimmer, microPAM project (https://github.com/WMXZ-EU/LC-MARE/tree/main/microPAM_V3); ADC configuration sequence from his `adc.cxx`. Adapted by Jay Barlow with Claude (Anthropic).
